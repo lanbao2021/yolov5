@@ -1,0 +1,6 @@
+报错：SyntaxError: invalid syntax
+
+因为f'{xxx}'的用法是需要python3.8.5后才支持
+报错的本质原因就是使用的python版本不对
+
+（你用python train.py时不一定调用的是python3可能是python2)

@@ -1,4 +1,5 @@
-# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# -*- coding:utf-8 -*-
+# YOLOv5  by Ultralytics, GPL-3.0 license
 """
 Train a YOLOv5 model on a custom dataset.
 

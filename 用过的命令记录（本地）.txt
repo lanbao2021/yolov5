@@ -4,5 +4,11 @@ python detect.py --source 'data/images/bus.jpg' --weights 'weights/yolov5s.pt'
 # 设置视频路径，权重文件路径
 python detect.py --source 'data/videos/xin_bao_dao.mp4' --weights 'weights/yolov5s.pt'
 
+# 打开摄像头（不加--view-img其实已经有实时显示了，没有弹出来而已）
+python detect.py --source 0 --weights 'weights/yolov5s.pt'
+
 # 训练自定义数据集（mask）
 python train.py --data train/mask/mask_data.yaml --cfg train/mask/mask_yolov5s.yaml --weights weights/yolov5s.pt --epoch 100 --batch-size 4 --device cpu
+
+
+detect.run(weights='weights/yolov5s.pt', source='data/images/bus.jpg')

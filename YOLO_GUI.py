@@ -34,7 +34,6 @@ class MainWindow(QWidget):
         grid_layout.addWidget(self.weights_line_edit, 1, 1)
         grid_layout.addWidget(self.weights_button, 1, 2)
 
-
         self.detect_image_button = QPushButton('detect images')
         self.detect_image_button.clicked.connect(self.detect_image)
 
@@ -42,6 +41,7 @@ class MainWindow(QWidget):
         self.detect_videos_button.clicked.connect(self.detect_videos)
 
         self.detect_camera_button = QPushButton('detect camera')
+        self.detect_camera_button.clicked.connect(self.detect_camera)
 
         vertical_layout.addWidget(self.detect_image_button)
         vertical_layout.addWidget(self.detect_videos_button)
@@ -76,7 +76,9 @@ class MainWindow(QWidget):
         pass
 
     def detect_camera(self):
-        pass
+        thread = CameraThread()
+        print(self.weights_line_edit.text())
+        thread.run(self.weights_line_edit.text())
 
 
 class Child(QWidget):
@@ -135,6 +137,14 @@ class Child(QWidget):
             self.pos += 1
         if self.pos == self.image_num:
             self.pos -= 1
+
+
+class CameraThread(QThread):
+    def __init__(self):
+        super(CameraThread, self).__init__()
+
+    def run(self, weights_filename):
+        detect.run(weights=weights_filename, source=0)
 
 
 if __name__ == "__main__":

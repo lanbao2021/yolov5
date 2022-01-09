@@ -1,31 +1,67 @@
 # -*- coding:utf-8 -*-
-
-import sys
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-import detect
+from PyQt5.QtGui import *
+import sys
 
-class Form(QDialog):
-    def __init__(self, parent=None):
-        super(Form, self).__init__(parent)
-        layout = QVBoxLayout()
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('YOLOv5_GUI_1.0')
+        self.resize(256, 200)
 
-        self.btn1 = QPushButton("Button1")
-        self.btn1.setCheckable(True)
-        self.btn1.toggle()
-        self.btn1.clicked.connect(self.fun)
-        layout.addWidget(self.btn1)
+        global_widget = QWidget(self)
+        global_widget_layout = QVBoxLayout(global_widget)
 
-        self.setLayout(layout)
+        grid_layout = QGridLayout()
+        vertical_layout = QVBoxLayout()
 
-    def fun(self):
-        detect.run(weights='weights/yolov5s.pt', source=0)
+        self.source_button = QPushButton('...')
+        self.source_button.clicked.connect(self.get_source_file)
+        self.source_line_edit = QLineEdit()
 
-if __name__ == '__main__':
+        self.weights_button = QPushButton('...')
+        self.weights_button.clicked.connect(self.get_weights_file)
+        self.weights_line_edit = QLineEdit()
+
+        grid_layout.addWidget(QLabel('Source'), 0, 0)
+        grid_layout.addWidget(self.source_line_edit, 0, 1)
+        grid_layout.addWidget(self.source_button, 0, 2)
+        grid_layout.addWidget(QLabel('Weights'), 1, 0)
+        grid_layout.addWidget(self.weights_line_edit, 1, 1)
+        grid_layout.addWidget(self.weights_button, 1, 2)
+
+
+        self.detect_image_button = QPushButton('detect images')
+        #self.detect_image_button.clicked.connect()
+
+        self.detect_videos_button = QPushButton('detect videos')
+        self.detect_camera_button = QPushButton('detect camera')
+
+        vertical_layout.addWidget(self.detect_image_button)
+        vertical_layout.addWidget(self.detect_videos_button)
+        vertical_layout.addWidget(self.detect_camera_button)
+
+        global_widget_layout.addLayout(grid_layout)
+        global_widget_layout.addLayout(vertical_layout)
+
+    def get_source_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, 'Open Image File')
+        self.source_line_edit.setText(filename)
+        print('源文件路径：',filename)
+    def get_weights_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, 'Open Weights File')
+        self.weights_line_edit.setText(filename)
+        print('权重文件路径：',filename)
+    def detect_image(self):
+        pass
+    def detect_videos(self):
+        pass
+    def detect_camera(self):
+        pass
+
+
+if __name__ == "__main__":
     app = QApplication(sys.argv)
-    btnDemo = Form()
-    btnDemo.show()
+    win = MainWindow()
+    win.show()
     sys.exit(app.exec_())
-
-

@@ -211,7 +211,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
     if update:
         strip_optimizer(weights)  # update model (to fix SourceChangeWarning)
-
+    return save_dir
 
 def parse_opt():
     parser = argparse.ArgumentParser()

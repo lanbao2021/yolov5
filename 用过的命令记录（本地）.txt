@@ -1,8 +1,15 @@
-# 设置图片路径，权重文件路径
-python detect.py --source 'data/images/bus.jpg' --weights 'weights/yolov5s.pt'
+# 设置图片路径，权重文件路径，显示图片
+python detect.py --source 'data/images/bus.jpg' --weights 'weights/yolov5s.pt' --view-img
+
+# 设置图片文件夹路径，权重文件路径，显示图片
+python detect.py --source 'data/images' --weights 'weights/yolov5s.pt' --view-img
 
 # 设置视频路径，权重文件路径
 python detect.py --source 'data/videos/xin_bao_dao.mp4' --weights 'weights/yolov5s.pt'
+
+# 设置视频路径，权重文件路径，实时显示
+python detect.py --source 'data/videos/xin_bao_dao.mp4' --weights 'weights/yolov5s.pt' --view-img
+
 
 # 打开摄像头（不加--view-img其实已经有实时显示了，没有弹出来而已）
 python detect.py --source 0 --weights 'weights/yolov5s.pt'

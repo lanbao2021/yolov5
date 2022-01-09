@@ -6,7 +6,9 @@ import detect
 import sys
 import os
 
+
 class MainWindow(QWidget):
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle('YOLOv5_GUI_1.0')
@@ -73,7 +75,8 @@ class MainWindow(QWidget):
         self.child_window.show()
 
     def detect_videos(self, filepath):
-        pass
+        thread = VideoThread()
+        thread.run(self.weights_line_edit.text(), self.source_line_edit.text())
 
     def detect_camera(self):
         thread = CameraThread()
@@ -146,6 +149,13 @@ class CameraThread(QThread):
     def run(self, weights_filename):
         detect.run(weights=weights_filename, source=0)
 
+
+class VideoThread(QThread):
+    def __init__(self):
+        super(VideoThread, self).__init__()
+
+    def run(self, weights_filename, source_filename):
+        detect.run(weights=weights_filename, source=source_filename)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

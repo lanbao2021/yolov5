@@ -56,7 +56,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         iou_thres=0.45,  # NMS IOU threshold
         max_det=1000,  # maximum detections per image
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
-        view_img=True,  # show results
+        view_img=False,  # show results
         save_txt=False,  # save results to *.txt
         save_conf=False,  # save confidences in --save-txt labels
         save_crop=False,  # save cropped prediction boxes
@@ -182,7 +182,12 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             im0 = annotator.result()
             if view_img:
                 cv2.imshow(str(p), im0)
-                cv2.waitKey(0)  # 1 millisecond（修改成0这样就能持续存在）
+                key = cv2.waitKey(1)  # 1 millisecond（修改成0这样就能持续存在）
+                if key == 32:
+                    key = cv2.waitKey(0)
+                if key == 27:
+                    cv2.destroyAllWindows()
+                    return None
 
             # Save results (image with detections)
             if save_img:

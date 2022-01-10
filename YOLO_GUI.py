@@ -155,7 +155,10 @@ class VideoThread(QThread):
         super(VideoThread, self).__init__()
 
     def run(self, weights_filename, source_filename):
-        detect.run(weights=weights_filename, source=source_filename)
+        try:
+            detect.run(weights=weights_filename, source=source_filename, view_img=True) # 实时检测视频需要view-img打开
+        finally:
+            print('摄像头关闭！')
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

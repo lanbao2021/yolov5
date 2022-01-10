@@ -17,5 +17,6 @@ python detect.py --source 0 --weights 'weights/yolov5s.pt'
 # 训练自定义数据集（mask）
 python train.py --data train/mask/mask_data.yaml --cfg train/mask/mask_yolov5s.yaml --weights weights/yolov5s.pt --epoch 100 --batch-size 4 --device cpu
 
+# 训练自定义数据集（cup
+python train.py --data train/cup/cup_data.yaml --cfg train/cup/cup_yolov5s.yaml --weights weights/yolov5s.pt --epoch 100 --batch-size 4 --device cpu
 
-detect.run(weights='weights/yolov5s.pt', source='data/images/bus.jpg')

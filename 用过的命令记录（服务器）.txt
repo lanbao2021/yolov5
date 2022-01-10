@@ -1,0 +1,27 @@
+# 把Mac上的文件打包压缩成tar.gz
+tar -zcvf cup_dataset.tar.gz ./cup_dataset
+
+# 把Mac上的文件上传到服务器
+scp cup_dataset.tar.gz zn@172.23.63.0:~/lfc/
+
+# 把服务器上的文件取回Mac
+scp zn@172.23.63.0:~/lfc/best.pt cd ./
+
+
+# ssh登录服务器
+ssh zn@172.23.63.0
+
+# 查看英伟达显卡状态
+nvidia-smi
+
+# 查看当前运行的容器
+docker ps
+
+# 查看已存在的docker镜像
+docker images
+
+# 启动ultralytics提供的docker镜像
+sudo docker run --ipc=host --gpus all -it -v ~/lfc/:/usr/src/app/lfc ultralytics/yolov5:latest
+
+# 用官方提供的docker镜像训练数据集
+python train.py --data cup_data.yaml --cfg cup_yolov5s.yaml --weights /usr/src/app/lfc/pretrained/yolov5s.pt --epoch 100 --batch-size 4

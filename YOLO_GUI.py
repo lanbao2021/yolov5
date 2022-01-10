@@ -128,7 +128,7 @@ class MainWindow(QWidget):
 class Child(QWidget):
     def __init__(self, filepath=''):
         super().__init__()
-        self.setWindowTitle("我是子窗口啊")
+        self.setWindowTitle("图片检测结果浏览器")
         self.filepath = filepath
         print('屏幕宽度：', QApplication.desktop().width()) # 1440
         print('屏幕高度', QApplication.desktop().height()) # 900
@@ -148,7 +148,7 @@ class Child(QWidget):
         result = img.scaled(self.width(), self.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.image_label.setPixmap(QPixmap.fromImage(result))
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.pos += 1
+
 
         self.previous_button = QPushButton('上一张')
         self.previous_button.clicked.connect(self.previous_image)
@@ -163,24 +163,27 @@ class Child(QWidget):
         self.setLayout(vertical_layout)
 
     def previous_image(self):
+        if self.pos == 0:
+            return
         if self.pos > 0:
             self.pos -= 1
             img = QImage(str(self.filepath) + '/' + self.images[self.pos])
             result = img.scaled(self.image_label.width(), self.image_label.height(),
                                 Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.image_label.setPixmap(QPixmap.fromImage(result))
-        if self.pos == 0:
-            self.pos += 1
+
 
     def next_image(self):
-        if self.pos < self.image_num:
+        if self.pos == self.image_num-1:
+            return
+        if self.pos < self.image_num-1:
+            self.pos += 1
             img = QImage(str(self.filepath) + '/' + self.images[self.pos])
             result = img.scaled(self.image_label.width(), self.image_label.height(),
                                 Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.image_label.setPixmap(QPixmap.fromImage(result))
-            self.pos += 1
-        if self.pos == self.image_num:
-            self.pos -= 1
+
+
 
 
 class CameraThread(QThread):

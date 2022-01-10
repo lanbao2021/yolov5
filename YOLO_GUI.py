@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import json
-
+import atexit
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -19,6 +19,7 @@ def init_config():
     try:
         with open('config/config.json', 'r', encoding='utf-8') as config_file:
             CONFIG = json.load(config_file)
+            print('已打开上次保存的配置')
     except FileNotFoundError as error:
         print('配置文件不存在 ', str(error))
 
@@ -29,6 +30,7 @@ def save_config():
         os.mkdir('config')
     with open('config/config.json', 'w', encoding='utf-8') as config_file:
         config_file.write(json.dumps(CONFIG, ensure_ascii=False))
+    print('配置文件已保存')
 
 
 class MainWindow(QWidget):
@@ -39,6 +41,7 @@ class MainWindow(QWidget):
         self.resize(256, 200)
 
         init_config()
+        atexit.register(self.open_failed)
 
         global_widget = QWidget(self)
         global_widget_layout = QVBoxLayout(global_widget)
@@ -56,7 +59,7 @@ class MainWindow(QWidget):
         self.weights_button.clicked.connect(self.get_weights_file)
         self.weights_line_edit = QLineEdit()
         if CONFIG.get('weights_file'):
-            self.source_line_edit.setText(CONFIG['weights_file'])
+            self.weights_line_edit.setText(CONFIG['weights_file'])
 
 
         grid_layout.addWidget(QLabel('Source'), 0, 0)
@@ -82,8 +85,11 @@ class MainWindow(QWidget):
         global_widget_layout.addLayout(grid_layout)
         global_widget_layout.addLayout(vertical_layout)
 
-    def __del__(self):
-        save_config()
+    def open_failed(self):
+        try:
+            print('无法在析构函数里正常使用open')
+        finally:
+            save_config()
 
     def get_source_file(self):
         filename, _ = QFileDialog.getOpenFileName(self, 'Open Image File')

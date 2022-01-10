@@ -1,10 +1,34 @@
 # -*- coding:utf-8 -*-
+import json
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import detect
 import sys
 import os
+
+CONFIG = dict()
+
+
+def init_config():
+    global CONFIG
+    if not os.path.exists('config'):
+        os.mkdir('config')
+        return
+    try:
+        with open('config/config.json', 'r', encoding='utf-8') as config_file:
+            CONFIG = json.load(config_file)
+    except FileNotFoundError as error:
+        print('配置文件不存在 ', str(error))
+
+
+def save_config():
+    global CONFIG
+    if not os.path.exists('config'):
+        os.mkdir('config')
+    with open('config/config.json', 'w', encoding='utf-8') as config_file:
+        config_file.write(json.dumps(CONFIG, ensure_ascii=False))
 
 
 class MainWindow(QWidget):
@@ -14,6 +38,7 @@ class MainWindow(QWidget):
         self.setWindowTitle('YOLOv5_GUI_1.0')
         self.resize(256, 200)
 
+        init_config()
 
         global_widget = QWidget(self)
         global_widget_layout = QVBoxLayout(global_widget)
@@ -24,10 +49,15 @@ class MainWindow(QWidget):
         self.source_button = QPushButton('...')
         self.source_button.clicked.connect(self.get_source_file)
         self.source_line_edit = QLineEdit()
+        if CONFIG.get('source_file'):
+            self.source_line_edit.setText(CONFIG['source_file'])
 
         self.weights_button = QPushButton('...')
         self.weights_button.clicked.connect(self.get_weights_file)
         self.weights_line_edit = QLineEdit()
+        if CONFIG.get('weights_file'):
+            self.source_line_edit.setText(CONFIG['weights_file'])
+
 
         grid_layout.addWidget(QLabel('Source'), 0, 0)
         grid_layout.addWidget(self.source_line_edit, 0, 1)
@@ -52,14 +82,19 @@ class MainWindow(QWidget):
         global_widget_layout.addLayout(grid_layout)
         global_widget_layout.addLayout(vertical_layout)
 
+    def __del__(self):
+        save_config()
+
     def get_source_file(self):
         filename, _ = QFileDialog.getOpenFileName(self, 'Open Image File')
         self.source_line_edit.setText(filename)
+        CONFIG['source_file'] = self.source_line_edit.text()
         print('源文件路径：',filename)
 
     def get_weights_file(self):
         filename, _ = QFileDialog.getOpenFileName(self, 'Open Weights File')
         self.weights_line_edit.setText(filename)
+        CONFIG['weights_file'] = self.weights_line_edit.text()
         print('权重文件路径：',filename)
 
     def detect_image(self):
@@ -159,6 +194,7 @@ class VideoThread(QThread):
             detect.run(weights=weights_filename, source=source_filename, view_img=True) # 实时检测视频需要view-img打开
         finally:
             print('摄像头关闭！')
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

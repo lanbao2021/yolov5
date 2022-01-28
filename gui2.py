@@ -70,8 +70,10 @@ class MainWindow(QWidget):
         init_config()
         atexit.register(save_config)
         self.initUI()
-        sys.stdout = Signal()
-        sys.stdout.text_update.connect(self.update_text)
+        # sys.stdout = Signal()
+        # sys.stdout.text_update.connect(self.update_text)
+        # sys.stdeer = Signal()
+        # sys.stdeer.text_update.connect(self.update_text)
 
     def update_text(self, text):
         cursor = self.output_text.textCursor()

@@ -13,10 +13,14 @@ Website: zetcode.com
 import os
 import json
 import sys
-import atexit
-from PyQt5.QtWidgets import (QWidget, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QRadioButton,
-                             QTextEdit, QGridLayout, QApplication)
 
+from PyQt5.QtCore import QObject, pyqtSignal, QEventLoop, QTimer
+from PyQt5.QtGui import QTextCursor
+
+import detect
+import atexit
+from PyQt5.QtWidgets import (QWidget, QFileDialog, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QRadioButton,
+                             QTextEdit, QGridLayout, QApplication)
 CONFIG = {
     'source': '',
     'weight': '',
@@ -26,6 +30,14 @@ CONFIG = {
     'detect_config_device': 'cpu'
 }
 
+
+def save_config():
+    global CONFIG
+    if not os.path.exists('config'):
+        os.mkdir('config')
+    with open('config/config.json', 'w', encoding='utf-8') as config_file:
+        config_file.write(json.dumps(CONFIG, ensure_ascii=False))
+    print('配置文件已保存')
 
 def init_config():
     global CONFIG
@@ -40,13 +52,15 @@ def init_config():
         print('配置文件不存在 ', str(error))
 
 
-def save_config():
-    global CONFIG
-    if not os.path.exists('config'):
-        os.mkdir('config')
-    with open('config/config.json', 'w', encoding='utf-8') as config_file:
-        config_file.write(json.dumps(CONFIG, ensure_ascii=False))
-    print('配置文件已保存')
+class Signal(QObject):
+    text_update = pyqtSignal(str)
+
+    def write(self, text):
+        self.text_update.emit(str(text))
+        # loop = QEventLoop()
+        # QTimer.singleShot(1000, loop.quit)
+        # loop.exec_()
+        # QApplication.processEvents()
 
 
 class MainWindow(QWidget):
@@ -56,13 +70,15 @@ class MainWindow(QWidget):
         init_config()
         atexit.register(save_config)
         self.initUI()
+        sys.stdout = Signal()
+        sys.stdout.text_update.connect(self.update_text)
 
-    def update_detect_radio(self):
-        CONFIG['run_model'] = 'detect'
-
-    def update_train_radio(self):
-        CONFIG['run_model'] = 'train'
-
+    def update_text(self, text):
+        cursor = self.output_text.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        self.output_text.append(text)
+        self.output_text.setTextCursor(cursor)
+        self.output_text.ensureCursorVisible()
 
     def initUI(self):
         grid = QGridLayout()
@@ -72,21 +88,23 @@ class MainWindow(QWidget):
         grid.setColumnStretch(3, 0)
 
         source = QLabel('Source')
-        source_input = QLineEdit()
-        source_input.setText(CONFIG['source'])
-        source_input.setFixedHeight(30)
+        self.source_input = QLineEdit()
+        self.source_input.setText(CONFIG['source'])
+        self.source_input.setFixedHeight(30)
         source_button = QPushButton('...')
+        source_button.clicked.connect(self.get_source_file)
         grid.addWidget(source, 1, 0)
-        grid.addWidget(source_input, 1, 1, 1, 2)
+        grid.addWidget(self.source_input, 1, 1, 1, 2)
         grid.addWidget(source_button, 1, 3)
 
         weight = QLabel('Weight')
-        weight_input = QLineEdit()
-        weight_input.setText(CONFIG['weight'])
-        weight_input.setFixedHeight(30)
+        self.weight_input = QLineEdit()
+        self.weight_input.setText(CONFIG['weight'])
+        self.weight_input.setFixedHeight(30)
         weight_button = QPushButton('...')
+        weight_button.clicked.connect(self.get_weight_file)
         grid.addWidget(weight, 2, 0)
-        grid.addWidget(weight_input, 2, 1, 1, 2)
+        grid.addWidget(self.weight_input, 2, 1, 1, 2)
         grid.addWidget(weight_button, 2, 3)
 
         model = QLabel('Model')
@@ -108,42 +126,80 @@ class MainWindow(QWidget):
         config_button.setFixedHeight(40)
         config_button.clicked.connect(self.config)
         start_button = QPushButton('Start')
+        start_button.clicked.connect(self.start)
         start_button.setFixedHeight(40)
         grid.addWidget(config_button, 4, 1)
         grid.addWidget(start_button, 4, 2)
 
 
         output = QLabel('Output')
-        output_text = QTextEdit()
+        self.output_text = QTextEdit()
         grid.addWidget(output, 5, 0)
-        grid.addWidget(output_text, 5, 1, 5, 3)
+        grid.addWidget(self.output_text, 5, 1, 5, 3)
 
         self.setLayout(grid)
 
         self.setGeometry(300, 300, 950, 700)
         self.setWindowTitle('YOLOv5_GUI')
 
+    def update_detect_radio(self):
+        CONFIG['run_model'] = 'detect'
+
+    def update_train_radio(self):
+        CONFIG['run_model'] = 'train'
+
     def config(self):
         self.w = ConfigDetection()
         self.w.show()
+
+    def start(self):
+        if CONFIG['run_model'] == 'detect':
+            if CONFIG['detect_config_type'] == 'image':
+                return None
+            if CONFIG['detect_config_type'] == 'images':
+                self.detect_images()
+                return None
+            if CONFIG['detect_config_type'] == 'video':
+                return None
+            if CONFIG['detect_config_type'] == 'camera':
+                return None
+        else:
+            return None
+
+    def get_source_file(self):
+        # QFileDialog.getExistingDirectory()
+        if CONFIG['detect_config_type'] == 'image':
+            filename, _ = QFileDialog.getOpenFileName(self, "Open Image File")
+            self.source_input.setText(filename)
+            CONFIG['source'] = filename
+            print('待检测文件路径：', filename)
+        else:
+            filename = QFileDialog.getExistingDirectory(self, "Open Image Directory")
+            self.source_input.setText(filename)
+            CONFIG['source'] = filename
+            print('待检测文件夹路径：', filename)
+
+    def get_weight_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, 'Open Weights File')
+        self.weight_input.setText(filename)
+        CONFIG['weight'] = filename
+        print('权重文件路径：', filename)
+
+    def detect_images(self):
+        source = CONFIG['source']
+        weight = CONFIG['weight']
+        if source == '' or weight == '':
+            print('未设置待检测文件或权重文件路径！')
+            return None
+        save_dir = detect.run(weights=weight, source=source)
+
+        print('检测结果保存路径：', save_dir)
 
 
 class ConfigDetection(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-
-    def update_type_image(self):
-        CONFIG['detect_config_type'] = 'image'
-
-    def update_type_images(self):
-        CONFIG['detect_config_type'] = 'images'
-
-    def update_type_video(self):
-        CONFIG['detect_config_type'] = 'video'
-
-    def update_type_camera(self):
-        CONFIG['detect_config_type'] = 'camera'
 
     def initUI(self):
         grid = QGridLayout()
@@ -178,9 +234,14 @@ class ConfigDetection(QWidget):
 
         image_size = QLabel('Size')
         size1 = QRadioButton('640')
-        size1.setChecked(True)
+        size1.setChecked(CONFIG['detect_config_size'] == 640)
+        size1.clicked.connect(self.update_image_size1)
         size2 = QRadioButton('320')
+        size2.setChecked(CONFIG['detect_config_size'] == 320)
+        size2.clicked.connect(self.update_image_size2)
         size3 = QRadioButton('240')
+        size3.setChecked(CONFIG['detect_config_size'] == 240)
+        size3.clicked.connect(self.update_image_size3)
         hlayout = QHBoxLayout()
         hlayout.addWidget(size1)
         hlayout.addWidget(size2)
@@ -193,8 +254,11 @@ class ConfigDetection(QWidget):
 
         device = QLabel('Device')
         device1 = QRadioButton('CPU')
-        device1.setChecked(True)
+        device1.setChecked(CONFIG['detect_config_device'] == 'cpu')
+        device1.clicked.connect(self.update_device1)
         device2 = QRadioButton('GPU')
+        device2.setChecked(CONFIG['detect_config_device'] == 'gpu')
+        device2.clicked.connect(self.update_device2)
         hlayout = QHBoxLayout()
         hlayout.addWidget(device1)
         hlayout.addWidget(device2)
@@ -206,7 +270,9 @@ class ConfigDetection(QWidget):
 
         ok = QPushButton('OK')
         ok.setFixedHeight(50)
+        ok.clicked.connect(self.ok)
         cancel = QPushButton('Cancel')
+        cancel.clicked.connect(self.cancel)
         cancel.setFixedHeight(50)
         grid.addWidget(ok, 4, 1, 1, 2)
         grid.addWidget(cancel, 4, 3, 1, 2)
@@ -215,7 +281,47 @@ class ConfigDetection(QWidget):
         self.setGeometry(300, 300, 300, 200)
         self.setWindowTitle('Configure Detection')
 
+    def ok(self):
+        self.save_config()
+        self.close()
 
+    def cancel(self):
+        self.close()
+
+    def save_config(self):
+        global CONFIG
+        if not os.path.exists('config'):
+            os.mkdir('config')
+        with open('config/config.json', 'w', encoding='utf-8') as config_file:
+            config_file.write(json.dumps(CONFIG, ensure_ascii=False))
+        print('配置文件已保存')
+
+    def update_type_image(self):
+        CONFIG['detect_config_type'] = 'image'
+
+    def update_type_images(self):
+        CONFIG['detect_config_type'] = 'images'
+
+    def update_type_video(self):
+        CONFIG['detect_config_type'] = 'video'
+
+    def update_type_camera(self):
+        CONFIG['detect_config_type'] = 'camera'
+
+    def update_image_size1(self):
+        CONFIG['detect_config_size'] = 640
+
+    def update_image_size2(self):
+        CONFIG['detect_config_size'] = 320
+
+    def update_image_size3(self):
+        CONFIG['detect_config_size'] = 240
+
+    def update_device1(self):
+        CONFIG['detect_config_device'] = 'cpu'
+
+    def update_device2(self):
+        CONFIG['detect_config_device'] = 'gpu'
 
 
 class ConfigTraining(QWidget):

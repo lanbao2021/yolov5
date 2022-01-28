@@ -1,1 +1,1 @@
-{"source": "", "weight": "", "run_model": "detect", "detect_config_type": "camera", "detect_config_size": 640, "detect_config_device": "cpu"}
+{"source": "/Users/lantongxue/PycharmProjects/yolov5/data/images", "weight": "/Users/lantongxue/PycharmProjects/yolov5/weights/yolov5s.pt", "run_model": "detect", "detect_config_type": "images", "detect_config_size": 640, "detect_config_device": "cpu"}

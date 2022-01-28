@@ -102,7 +102,7 @@ class MainWindow(QWidget):
         filename, _ = QFileDialog.getOpenFileName(self, 'Open Weights File')
         self.weights_line_edit.setText(filename)
         CONFIG['weights_file'] = self.weights_line_edit.text()
-        print('权重文件路径：',filename)
+        print('权重文件路径：', filename)
 
     def detect_image(self):
         source_filename = self.source_line_edit.text()

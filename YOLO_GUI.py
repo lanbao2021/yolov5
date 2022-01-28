@@ -33,6 +33,7 @@ def save_config():
     print('配置文件已保存')
 
 
+
 class MainWindow(QWidget):
 
     def __init__(self):
@@ -172,7 +173,6 @@ class Child(QWidget):
                                 Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.image_label.setPixmap(QPixmap.fromImage(result))
 
-
     def next_image(self):
         if self.pos == self.image_num-1:
             return
@@ -182,8 +182,6 @@ class Child(QWidget):
             result = img.scaled(self.image_label.width(), self.image_label.height(),
                                 Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.image_label.setPixmap(QPixmap.fromImage(result))
-
-
 
 
 class CameraThread(QThread):

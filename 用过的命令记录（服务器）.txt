@@ -8,6 +8,8 @@ tar -zxvf cup_dataset.tar.gz
 scp cup_dataset.tar.gz zn@172.23.63.0:~/lfc/
 scp cup_data.yaml zn@172.23.63.0:~/lfc/
 scp cup_yolov5s.yaml zn@172.23.63.0:~/lfc/
+scp yolov5s.wts zn@172.23.63.0:~/lfc/tensorrtx/yolov5/build
+scp yolov5s.pt ubuntu@124.223.102.128:~/yolov5/
 
 # 把服务器上的文件取回Mac
 scp zn@172.23.63.0:~/lfc/best.pt ./
@@ -35,7 +37,10 @@ docker images
 sudo docker run --ipc=host --gpus all -it -v ~/lfc/:/usr/src/app/lfc ultralytics/yolov5:latest
 
 # 用官方提供的docker镜像训练cup, fluid数据集
-python train.py --data ./lfc/cup_data.yaml --cfg ./lfc/cup_yolov5s.yaml --weights /usr/src/app/lfc/pretrained/yolov5s.pt --epoch 500 --batch-size 16
+python train.py --data ./lfc/cup_data.yaml --cfg ./lfc/cup_yolov5s.yaml --weights /usr/src/app/lfc/pretrained/yolov5s.pt --epoch 100 --batch-size 4
 
 # 用官方提供的docker镜像训练mask数据集
 python train.py --data mask_data.yaml --cfg mask_yolov5s.yaml --weights /usr/src/app/lfc/pretrained/yolov5s.pt --epoch 100 --batch-size 16
+
+# 转换onnx
+python export.py --data train/cup/cup_data.yaml --weights yolov5s_cup.pt --include onnx

@@ -1,1 +1,1 @@
-{"source_file": "/Users/lantongxue/Desktop/test/IMG_4121.jpeg", "weights_file": "/Users/lantongxue/Documents/exp/weights/best.pt"}
+{"source": "", "weight": "", "run_model": "detect", "detect_config_type": "camera", "detect_config_size": 640, "detect_config_device": "cpu"}

@@ -1,38 +1,44 @@
 #!/usr/bin/python
 
 """
-ZetCode PyQt5 tutorial
-
-In this example, we create a bit
-more complicated window layout using
-the QGridLayout manager.
-
-Author: Jan Bodnar
-Website: zetcode.com
+author: lanfucai
+time: 2022.01.29
 """
+
 import logging
 import os
 import json
 import sys
 
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QObject, pyqtSignal, QEventLoop, QTimer
+from PyQt5.QtCore import QObject, pyqtSignal, QEventLoop, QTimer, QThread
 from PyQt5.QtGui import QTextCursor
 
 import detect
+import train
 import atexit
 from PyQt5.QtWidgets import (QWidget, QFileDialog, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QRadioButton,
                              QTextEdit, QGridLayout, QApplication)
+
+import train
+
 CONFIG = {
     'source': '',
     'weight': '',
     'run_model': 'detect',  # detection or training
     'detect_config_type': 'images',
     'detect_config_size': 640,
-    'detect_config_device': 'cpu'
+    'detect_config_device': 'cpu',
+    'train_config_data': '',
+    'train_config_yaml': '',
+    'train_config_epoch': 100,
+    'train_config_batch_size': 4,
+    'train_config_device': 'cpu'
 }
 
 temp = sys.stdout
+temp_err = sys.stderr
+
 
 def save_config():
     global CONFIG
@@ -53,6 +59,7 @@ def save_config_exit():
         config_file.write(json.dumps(CONFIG, ensure_ascii=False))
     print('配置文件已保存')
 
+
 def init_config():
     global CONFIG
     if not os.path.exists('config'):
@@ -71,10 +78,9 @@ class Signal(QObject):
 
     def write(self, text):
         self.text_update.emit(str(text))
-        # loop = QEventLoop()
-        # QTimer.singleShot(1000, loop.quit)
-        # loop.exec_()
-        # QApplication.processEvents()
+
+    def flush(self):
+        pass
 
 
 class QTextEditLogger(logging.Handler):
@@ -98,8 +104,6 @@ class MainWindow(QWidget):
 
         sys.stdout = Signal()
         sys.stdout.text_update.connect(self.update_text)
-        # sys.stdeer = Signal()
-        # sys.stdeer.text_update.connect(self.update_text)
 
     def update_text(self, text):
         cursor = self.logTextBox.widget.textCursor()
@@ -166,7 +170,7 @@ class MainWindow(QWidget):
         self.logTextBox = QTextEditLogger(self)
         self.logTextBox.setFormatter(logging.Formatter('%(message)s'))
         logging.getLogger().addHandler(self.logTextBox)
-        logging.getLogger().setLevel(logging.DEBUG)
+        logging.getLogger().setLevel(logging.INFO)
 
         grid.addWidget(self.logTextBox.widget, 5, 1, 5, 3)
 
@@ -186,22 +190,45 @@ class MainWindow(QWidget):
         CONFIG['run_model'] = 'train'
 
     def config(self):
-        self.w = ConfigDetection()
-        self.w.show()
+        if CONFIG['run_model'] == 'detect':
+            self.w = ConfigDetection()
+            self.w.show()
+            return None
+        if CONFIG['run_model'] == 'train':
+            self.w = ConfigTraining()
+            self.w.show()
+            return None
 
     def start(self):
         if CONFIG['run_model'] == 'detect':
             if CONFIG['detect_config_type'] == 'image':
+                self.detect_images()
                 return None
             if CONFIG['detect_config_type'] == 'images':
                 self.detect_images()
                 return None
             if CONFIG['detect_config_type'] == 'video':
+                self.detect_images()
                 return None
             if CONFIG['detect_config_type'] == 'camera':
+                self.detect_camera()
                 return None
         else:
+            self.train_model()
             return None
+
+    def train_model(self):
+        thread = TrainingThread(self.logTextBox)
+        thread.start()
+        # train.run(weights=CONFIG['weight'],
+        #           cfg=CONFIG['train_config_yaml'],
+        #           data=CONFIG['train_config_data'],
+        #           epoch=CONFIG['train_config_epoch'],
+        #           batch_size=CONFIG['train_config_batch_size'],
+        #           device=CONFIG['train_config_device']
+        #           )
+        QApplication.processEvents()
+        return None
 
     def get_source_file(self):
         # QFileDialog.getExistingDirectory()
@@ -229,8 +256,28 @@ class MainWindow(QWidget):
             print('未设置待检测文件或权重文件路径！')
             return None
         save_dir = detect.run(weights=weight, source=source)
-
         print('检测结果保存路径：', save_dir)
+
+    def detect_camera(self):
+        weight = CONFIG['weight']
+        if weight == '':
+            print('未设置权重文件路径！')
+            return None
+        detect.run(weights=weight, source=0)
+
+
+class TrainingThread(QThread):
+    def __init__(self, output):
+        super(TrainingThread, self).__init__()
+
+    def run(self):
+        train.run(weights=CONFIG['weight'],
+                  cfg=CONFIG['train_config_yaml'],
+                  data=CONFIG['train_config_data'],
+                  epoch=CONFIG['train_config_epoch'],
+                  batch_size=CONFIG['train_config_batch_size'],
+                  device=CONFIG['train_config_device']
+                  )
 
 
 class ConfigDetection(QWidget):
@@ -366,8 +413,192 @@ class ConfigTraining(QWidget):
         super().__init__()
         self.initUI()
 
+    def update_config_eopch1(self):
+        CONFIG['train_config_epoch'] == 100
+        return None
+
+    def update_config_eopch2(self):
+        CONFIG['train_config_epoch'] == 200
+        return None
+
+    def update_config_eopch3(self):
+        CONFIG['train_config_epoch'] == 300
+        return None
+
+    def update_config_eopch4(self):
+        CONFIG['train_config_epoch'] == 400
+        return None
+
+    def update_config_batch_size1(self):
+        CONFIG['train_config_batch_size'] = 4
+        return None
+
+    def update_config_batch_size2(self):
+        CONFIG['train_config_batch_size'] = 8
+        return None
+
+    def update_config_batch_size3(self):
+        CONFIG['train_config_batch_size'] = 16
+        return None
+
+    def update_config_batch_size4(self):
+        CONFIG['train_config_batch_size'] = 32
+        return None
+
+    def update_config_device1(self):
+        CONFIG['train_config_device'] = 'cpu'
+        return None
+
+    def update_config_device2(self):
+        CONFIG['train_config_device'] = 'gpu'
+        return None
+
+    def update_config_device3(self):
+        CONFIG['train_config_device'] = 'gpus'
+        return None
+
+    def get_yaml_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Open YAML File")
+        self.yaml_input.setText(filename)
+        CONFIG['train_config_yaml'] = filename
+        print('YAML配置文件路径：', filename)
+
+    def get_data_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Open Data File")
+        self.data_input.setText(filename)
+        CONFIG['train_config_data'] = filename
+        print('Data文件路径：', filename)
+        return None
+
     def initUI(self):
-        pass
+        grid = QGridLayout()
+        grid.setSpacing(30)
+        grid.setColumnStretch(0, 0)
+        grid.setColumnStretch(1, 1)
+        grid.setColumnStretch(2, 1)
+        grid.setColumnStretch(3, 1)
+        grid.setColumnStretch(4, 1)
+        # grid.setColumnStretch(5, 1)
+
+        data = QLabel('Data')
+        self.data_input = QLineEdit()
+        self.data_input.setText(CONFIG['train_config_data'])
+        self.data_input.setFixedHeight(30)
+        data_button = QPushButton('...')
+        data_button.setFixedHeight(30)
+        data_button.setMaximumWidth(50)
+        CONFIG['detect_config_type'] = 'images'
+        data_button.clicked.connect(self.get_data_file)
+        grid.addWidget(data, 0, 0)
+        grid.addWidget(self.data_input, 0, 1, 1, 3)
+        grid.addWidget(data_button, 0, 4)
+
+        yaml = QLabel('YAML')
+        self.yaml_input = QLineEdit()
+        self.yaml_input.setText(CONFIG['train_config_yaml'])
+        self.yaml_input.setFixedHeight(30)
+        yaml_button = QPushButton('...')
+        yaml_button.setFixedHeight(30)
+        yaml_button.setMaximumWidth(50)
+        CONFIG['detect_config_type'] = 'images'
+        yaml_button.clicked.connect(self.get_yaml_file)
+        grid.addWidget(yaml, 1, 0)
+        grid.addWidget(self.yaml_input, 1, 1, 1, 3)
+        grid.addWidget(yaml_button, 1, 4)
+
+
+
+        epoch = QLabel('Epoch')
+        epoch1 = QRadioButton('100')
+        epoch1.setChecked(CONFIG['train_config_epoch'] == 100)
+        epoch1.clicked.connect(self.update_config_eopch1)
+
+        epoch2 = QRadioButton('200')
+        epoch2.setChecked(CONFIG['train_config_epoch'] == 200)
+        epoch2.clicked.connect(self.update_config_eopch2)
+
+        epoch3 = QRadioButton('300')
+        epoch3.setChecked(CONFIG['train_config_epoch'] == 300)
+        epoch3.clicked.connect(self.update_config_eopch3)
+
+        epoch4 = QRadioButton('400')
+        epoch4.setChecked(CONFIG['train_config_epoch'] == 400)
+        epoch4.clicked.connect(self.update_config_eopch4)
+
+        grid.addWidget(epoch, 2, 0)
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(epoch1)
+        hlayout.addWidget(epoch2)
+        hlayout.addWidget(epoch3)
+        hlayout.addWidget(epoch4)
+        groupBox = QGroupBox()
+        groupBox.setLayout(hlayout)
+        groupBox.setFixedHeight(50)
+        grid.addWidget(groupBox, 2, 1, 1, 4)
+
+        batch_size = QLabel('Batch_Size')
+        batch_size1 = QRadioButton('4')
+        batch_size1.setChecked(CONFIG['train_config_batch_size'] == 4)
+        batch_size1.clicked.connect(self.update_config_batch_size1)
+        batch_size2 = QRadioButton('8')
+        batch_size2.setChecked(CONFIG['train_config_batch_size'] == 8)
+        batch_size2.clicked.connect(self.update_config_batch_size2)
+        batch_size3 = QRadioButton('16')
+        batch_size3.setChecked(CONFIG['train_config_batch_size'] == 16)
+        batch_size3.clicked.connect(self.update_config_batch_size3)
+        batch_size4 = QRadioButton('32')
+        batch_size4.setChecked(CONFIG['train_config_batch_size'] == 32)
+        batch_size4.clicked.connect(self.update_config_batch_size4)
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(batch_size1)
+        hlayout.addWidget(batch_size2)
+        hlayout.addWidget(batch_size3)
+        hlayout.addWidget(batch_size4)
+        groupBox = QGroupBox()
+        groupBox.setLayout(hlayout)
+        groupBox.setFixedHeight(50)
+        grid.addWidget(batch_size, 3, 0)
+        grid.addWidget(groupBox, 3, 1, 1, 4)
+
+        device = QLabel('Device')
+        device1 = QRadioButton('CPU')
+        device1.setChecked(CONFIG['train_config_device'] == 'cpu')
+        device1.clicked.connect(self.update_config_device1)
+        device2 = QRadioButton('GPU')
+        device2.setChecked(CONFIG['train_config_device'] == 'gpu')
+        device2.clicked.connect(self.update_config_device2)
+        device3 = QRadioButton('GPUs')
+        device3.setChecked(CONFIG['train_config_device'] == 'gpus')
+        device3.clicked.connect(self.update_config_device3)
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(device1)
+        hlayout.addWidget(device2)
+        hlayout.addWidget(device3)
+        groupBox = QGroupBox()
+        groupBox.setLayout(hlayout)
+        groupBox.setFixedHeight(50)
+        grid.addWidget(device, 4, 0)
+        grid.addWidget(groupBox, 4, 1, 1, 4)
+
+        ok = QPushButton('OK')
+        ok.setFixedHeight(50)
+        ok.clicked.connect(self.ok)
+        cancel = QPushButton('Cancel')
+        cancel.clicked.connect(self.cancel)
+        cancel.setFixedHeight(50)
+        grid.addWidget(ok, 5, 1, 1, 2)
+        grid.addWidget(cancel, 5, 3, 1, 2)
+
+        self.setLayout(grid)
+        self.setGeometry(300, 300, 300, 200)
+        self.setWindowTitle('Configure Training')
+
+    def ok(self):
+        save_config()
+        self.close()
+
+    def cancel(self):
+        self.close()
 
 
 if __name__ == '__main__':

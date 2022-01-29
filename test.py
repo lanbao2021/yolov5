@@ -1,56 +1,44 @@
-import sys
-from PyQt5 import QtWidgets
-import logging
-import detect
+import time
+import threading
+from tqdm import tqdm
+from PyQt5 import QtCore, QtGui, QtWidgets
+import lorem
 
-# Uncomment below for terminal log messages
-# logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+class LogTextEdit(QtWidgets.QPlainTextEdit):
+    def write(self, message):
+        if not hasattr(self, "flag"):
+            self.flag = False
+        message = message.replace('\r', '').rstrip()
+        if message:
+            method = "replace_last_line" if self.flag else "appendPlainText"
+            QtCore.QMetaObject.invokeMethod(self,
+                method,
+                QtCore.Qt.QueuedConnection,
+                QtCore.Q_ARG(str, message))
+            self.flag = True
+        else:
+            self.flag = False
 
-class QTextEditLogger(logging.Handler):
-    def __init__(self, parent):
-        super().__init__()
-        self.widget = QtWidgets.QPlainTextEdit(parent)
-        self.widget.setReadOnly(True)
+    @QtCore.pyqtSlot(str)
+    def replace_last_line(self, text):
+        cursor = self.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.select(QtGui.QTextCursor.BlockUnderCursor)
+        cursor.removeSelectedText()
+        cursor.insertBlock()
+        self.setTextCursor(cursor)
+        self.insertPlainText(text)
 
-    def emit(self, record):
-        msg = self.format(record)
-        self.widget.appendPlainText(msg)
+def foo(w):
+    for i in tqdm(range(100), file=w):
+        time.sleep(0.1)
 
-
-class MyDialog(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        logTextBox = QTextEditLogger(self)
-        # You can format what is printed to text box
-        logTextBox.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-        logging.getLogger().addHandler(logTextBox)
-        # You can control the logging level
-        logging.getLogger().setLevel(logging.DEBUG)
-
-        self._button = QtWidgets.QPushButton(self)
-        self._button.setText('Test Me')
-
-        layout = QtWidgets.QVBoxLayout()
-        # Add the new logging box widget to the layout
-        layout.addWidget(logTextBox.widget)
-        layout.addWidget(self._button)
-        self.setLayout(layout)
-
-        # Connect signal to slot
-        self._button.clicked.connect(self.test)
-
-    def test(self):
-        pass
-        # logging.debug('damn, a bug')
-        # logging.info('something to remember')
-        # logging.warning('that\'s not right')
-        # logging.error('foobar')
-
-app = QtWidgets.QApplication(sys.argv)
-dlg = MyDialog()
-dlg.show()
-detect.run(weights='/Users/lantongxue/PycharmProjects/yolov5/weights/yolov5s.pt', source='/Users/lantongxue/PycharmProjects/yolov5/data/images')
-
-dlg.raise_()
-sys.exit(app.exec_())
+if __name__ == '__main__':
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    w = LogTextEdit(readOnly=True)
+    w.appendPlainText(lorem.paragraph())
+    w.appendHtml("Welcome to Stack Overflow")
+    w.show()
+    threading.Thread(target=foo, args=(w,), daemon=True).start()
+    sys.exit(app.exec_())

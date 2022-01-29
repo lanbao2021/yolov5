@@ -13,6 +13,7 @@ import random
 import re
 import shutil
 import signal
+import sys
 import time
 import urllib
 from itertools import repeat
@@ -49,7 +50,8 @@ def set_logging(name=None, verbose=True):
     for h in logging.root.handlers:
         logging.root.removeHandler(h)  # remove all handlers associated with the root logger object
     rank = int(os.getenv('RANK', -1))  # rank in world for Multi-GPU trainings
-    logging.basicConfig(format="%(message)s", level=logging.INFO if (verbose and rank in (-1, 0)) else logging.WARNING)
+    # stream=sys.stdout
+    logging.basicConfig(filename='LOG.txt', filemode='w', format="%(message)s", level=logging.INFO if (verbose and rank in (-1, 0)) else logging.WARNING)
     return logging.getLogger(name)
 
 

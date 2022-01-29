@@ -10,10 +10,12 @@ the QGridLayout manager.
 Author: Jan Bodnar
 Website: zetcode.com
 """
+import logging
 import os
 import json
 import sys
 
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal, QEventLoop, QTimer
 from PyQt5.QtGui import QTextCursor
 
@@ -30,9 +32,21 @@ CONFIG = {
     'detect_config_device': 'cpu'
 }
 
+temp = sys.stdout
 
 def save_config():
     global CONFIG
+    if not os.path.exists('config'):
+        os.mkdir('config')
+    with open('config/config.json', 'w', encoding='utf-8') as config_file:
+        config_file.write(json.dumps(CONFIG, ensure_ascii=False))
+    print('配置文件已保存')
+
+
+def save_config_exit():
+    global CONFIG
+    global temp
+    sys.stdout = temp
     if not os.path.exists('config'):
         os.mkdir('config')
     with open('config/config.json', 'w', encoding='utf-8') as config_file:
@@ -63,26 +77,38 @@ class Signal(QObject):
         # QApplication.processEvents()
 
 
+class QTextEditLogger(logging.Handler):
+    def __init__(self, parent):
+        super().__init__()
+        self.widget = QtWidgets.QPlainTextEdit(parent)
+        self.widget.setReadOnly(True)
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget.appendPlainText(msg)
+
+
 class MainWindow(QWidget):
 
-    def __init__(self):
+    def __init__(self, parent=None):
         super().__init__()
         init_config()
-        atexit.register(save_config)
-        self.initUI()
-        # sys.stdout = Signal()
-        # sys.stdout.text_update.connect(self.update_text)
+        atexit.register(save_config_exit)
+        self.initUI(parent)
+
+        sys.stdout = Signal()
+        sys.stdout.text_update.connect(self.update_text)
         # sys.stdeer = Signal()
         # sys.stdeer.text_update.connect(self.update_text)
 
     def update_text(self, text):
-        cursor = self.output_text.textCursor()
+        cursor = self.logTextBox.widget.textCursor()
         cursor.movePosition(QTextCursor.End)
-        self.output_text.append(text)
-        self.output_text.setTextCursor(cursor)
-        self.output_text.ensureCursorVisible()
+        self.logTextBox.widget.appendPlainText(text)
+        self.logTextBox.widget.setTextCursor(cursor)
+        self.logTextBox.widget.ensureCursorVisible()
 
-    def initUI(self):
+    def initUI(self, parent):
         grid = QGridLayout()
         grid.setSpacing(30)
         grid.setColumnStretch(1, 1)
@@ -135,14 +161,23 @@ class MainWindow(QWidget):
 
 
         output = QLabel('Output')
-        self.output_text = QTextEdit()
         grid.addWidget(output, 5, 0)
-        grid.addWidget(self.output_text, 5, 1, 5, 3)
+
+        self.logTextBox = QTextEditLogger(self)
+        self.logTextBox.setFormatter(logging.Formatter('%(message)s'))
+        logging.getLogger().addHandler(self.logTextBox)
+        logging.getLogger().setLevel(logging.DEBUG)
+
+        grid.addWidget(self.logTextBox.widget, 5, 1, 5, 3)
 
         self.setLayout(grid)
 
         self.setGeometry(300, 300, 950, 700)
         self.setWindowTitle('YOLOv5_GUI')
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget.appendPlainText(msg)
 
     def update_detect_radio(self):
         CONFIG['run_model'] = 'detect'

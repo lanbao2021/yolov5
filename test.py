@@ -1,21 +1,56 @@
-import os
-import json
+import sys
+from PyQt5 import QtWidgets
+import logging
+import detect
 
-if __name__ == '__main__':
-    source_file = 'source'
-    weights_file = ''
-    config_dict = dict()
-    config_dict['source_file'] = source_file
-    config_dict['weights_file'] = weights_file
-    print(config_dict)
+# Uncomment below for terminal log messages
+# logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    with open("config_json.json", "w", encoding='utf-8') as config:
-        config.write(json.dumps(config_dict, ensure_ascii=False))
+class QTextEditLogger(logging.Handler):
+    def __init__(self, parent):
+        super().__init__()
+        self.widget = QtWidgets.QPlainTextEdit(parent)
+        self.widget.setReadOnly(True)
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget.appendPlainText(msg)
 
 
-    config = json.load(open("config_json.json", encoding='utf-8'))
-    print(type(config))
-    print(config['weights_file'], config['weights_file'])
-    if config.get('weights_file'):
-        print('112')
+class MyDialog(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
+        logTextBox = QTextEditLogger(self)
+        # You can format what is printed to text box
+        logTextBox.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        logging.getLogger().addHandler(logTextBox)
+        # You can control the logging level
+        logging.getLogger().setLevel(logging.DEBUG)
+
+        self._button = QtWidgets.QPushButton(self)
+        self._button.setText('Test Me')
+
+        layout = QtWidgets.QVBoxLayout()
+        # Add the new logging box widget to the layout
+        layout.addWidget(logTextBox.widget)
+        layout.addWidget(self._button)
+        self.setLayout(layout)
+
+        # Connect signal to slot
+        self._button.clicked.connect(self.test)
+
+    def test(self):
+        pass
+        # logging.debug('damn, a bug')
+        # logging.info('something to remember')
+        # logging.warning('that\'s not right')
+        # logging.error('foobar')
+
+app = QtWidgets.QApplication(sys.argv)
+dlg = MyDialog()
+dlg.show()
+detect.run(weights='/Users/lantongxue/PycharmProjects/yolov5/weights/yolov5s.pt', source='/Users/lantongxue/PycharmProjects/yolov5/data/images')
+
+dlg.raise_()
+sys.exit(app.exec_())

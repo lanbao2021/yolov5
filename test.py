@@ -1,44 +1,33 @@
-import time
-import threading
-from tqdm import tqdm
-from PyQt5 import QtCore, QtGui, QtWidgets
-import lorem
+import os
+import re
+import pymysql
 
-class LogTextEdit(QtWidgets.QPlainTextEdit):
-    def write(self, message):
-        if not hasattr(self, "flag"):
-            self.flag = False
-        message = message.replace('\r', '').rstrip()
-        if message:
-            method = "replace_last_line" if self.flag else "appendPlainText"
-            QtCore.QMetaObject.invokeMethod(self,
-                method,
-                QtCore.Qt.QueuedConnection,
-                QtCore.Q_ARG(str, message))
-            self.flag = True
-        else:
-            self.flag = False
+def getIPv6Address():
+    output = os.popen("ipconfig /all").read()
+    # print(output)
+    result = re.findall(r"(([a-f0-9]{1,4}:){7}[a-f0-9]{1,4})", output, re.I)
+    return result[0][0]
 
-    @QtCore.pyqtSlot(str)
-    def replace_last_line(self, text):
-        cursor = self.textCursor()
-        cursor.movePosition(QtGui.QTextCursor.End)
-        cursor.select(QtGui.QTextCursor.BlockUnderCursor)
-        cursor.removeSelectedText()
-        cursor.insertBlock()
-        self.setTextCursor(cursor)
-        self.insertPlainText(text)
 
-def foo(w):
-    for i in tqdm(range(100), file=w):
-        time.sleep(0.1)
+def updateIPv6():
+    # 远程连接mysql数据库
+    con = pymysql.connect(
+        host='106.54.72.189',
+        port=3306,
+        database='weixin',
+        user='root',
+        password='lantongxue',
+        charset='utf8')
 
-if __name__ == '__main__':
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    w = LogTextEdit(readOnly=True)
-    w.appendPlainText(lorem.paragraph())
-    w.appendHtml("Welcome to Stack Overflow")
-    w.show()
-    threading.Thread(target=foo, args=(w,), daemon=True).start()
-    sys.exit(app.exec_())
+    # 创建一个cursor用于执行sql语句
+    cur = con.cursor()
+    ipv6 = getIPv6Address()
+    update = "UPDATE keyword SET reply='" + ipv6 + "' WHERE getkey='ipv6';"
+    cur.execute(update)
+    cur.close()
+
+
+if __name__ == "__main__":
+    # print(getIPv6Address()
+    updateIPv6()
+
